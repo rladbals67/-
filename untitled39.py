@@ -15,43 +15,57 @@ import random
 st.set_page_config(page_title="환승 마니또 : X-Signal", layout="wide")
 
 # 참가자 명단 (여기 30명의 이름을 넣으세요)
-PARTICIPANTS = [f"참가자{i}" for i in range(1, 31)]
-NICKNAMES = ["해은", "현규", "나연", "희두", "지연", "태이", "규민", "원빈", "지수", "민기",
-             "나언", "현준", "서경", "주원", "유정", "창진", "다혜", "동진", "종은", "광태",
-             "휘현", "혜원", "상정", "민형", "지유", "정훈", "영희", "철수", "벌꿀", "오소리"]
+PARTICIPANTS = ["단비", "창우", "주희", "온유", "유민", "주형", "6", "7", "8", "9", "10"]
 
-# 세션 상태 초기화 (데이터 휘발 방지용 - 실제 배포 시에는 DB나 파일 저장 필요)
+# --- 초기 설정 및 데이터 구축 (수정 버전) ---
 if 'db' not in st.session_state:
-    # 마니또 매칭
+    # 1. 마니또 매칭 (자기 자신 제외)
     targets = PARTICIPANTS[:]
     while True:
         random.shuffle(targets)
         if all(PARTICIPANTS[i] != targets[i] for i in range(len(PARTICIPANTS))):
             break
-
-    # 참가자 정보 DB 구축
+    
+    # 2. 참가자 정보 DB 구축
     db = {}
     for i, name in enumerate(PARTICIPANTS):
+        target_name = targets[i]
+        # 닉네임을 [마니또 이름 + "또"]로 설정
+        # 이름의 마지막 글자에 따라 '또'를 붙임
+        custom_nickname = f"{target_name}또" 
+        
         db[name] = {
-            "nickname": NICKNAMES[i],
-            "target": targets[i],
+            "nickname": custom_nickname, # 이제 랜덤 닉네임 대신 '하나또'처럼 저장됨
+            "target": target_name,
             "status": "아직 선택되지 않았습니다.",
-            "messages": [] # 1:1 메시지함
+            "messages": [] 
         }
     st.session_state.db = db
-    st.session_state.global_chat = [] # 단체톡
+    st.session_state.global_chat = []
+    
 
-# --- 로그인 화면 ---
+# --- 로그인 화면 (수정 버전) ---
 if 'user' not in st.session_state:
     st.title("💘 환승 마니또 : X-Signal")
-    login_name = st.selectbox("당신의 이름을 선택하세요", ["선택하세요"] + PARTICIPANTS)
-    if st.button("입장하기"):
-        if login_name != "선택하세요":
+    
+    # 이름 선택
+    login_name = st.selectbox("당신의 이름을 선택하세요", ["선택하세요", "운영자"] + PARTICIPANTS)
+    
+    # 운영자를 선택했을 때만 비밀번호 입력창이 나타남
+    if login_name == "운영자":
+        password = st.text_input("운영자 비밀번호를 입력하세요", type="password")
+        if st.button("운영자 로그인"):
+            if password == "1234": # 원하는 비밀번호로 바꾸세요!
+                st.session_state.user = "운영자"
+                st.rerun()
+            else:
+                st.error("비밀번호가 틀렸습니다.")
+    
+    # 일반 참가자 로그인
+    elif login_name != "선택하세요":
+        if st.button("입장하기"):
             st.session_state.user = login_name
             st.rerun()
-else:
-    user = st.session_state.user
-    my_data = st.session_state.db[user]
 
     # 사이드바: 내 정보
     st.sidebar.title(f"👤 {my_data['nickname']}")
